@@ -56,6 +56,9 @@ func SetBlock(key string, value bool) error {
 		return err
 	}
 	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
 	fmt.Printf("block request to %s returned: %d\n", url, resp.StatusCode)
 	return err
 }

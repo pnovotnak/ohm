@@ -2,25 +2,26 @@ package main
 
 import (
 	"bufio"
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"github.com/pnovotnak/ohm/src/config"
 	"github.com/pnovotnak/ohm/src/nextdns"
 	"github.com/pnovotnak/ohm/src/ohm"
 	"github.com/pnovotnak/ohm/src/types"
-	"io"
 	"log"
 	"net/http"
 	"regexp"
+	"time"
 )
 
 var (
 	Config = &config.Config{}
+	//go:embed config.yaml
+	configRaw []byte
 )
 
-func StreamLogs(logC chan *types.LogData) error {
-	defer close(logC)
-
+func StreamLogs(logC chan types.LogData) error {
 	req, err := nextdns.Get(nextdns.MakeUrl("profiles", nextdns.Profile, "logs", "stream"))
 	if err != nil {
 		return err
@@ -31,13 +32,14 @@ func StreamLogs(logC chan *types.LogData) error {
 		return err
 	}
 
+	log.Printf("log streamer started")
+
 	reader := bufio.NewReader(resp.Body)
 	// TODO cancel via context
 	for {
 		line, err := reader.ReadBytes('\n')
-		if err == io.EOF {
-			// TODO backoff & retry
-			break
+		if err != nil {
+			return err
 		}
 		prefix := nextdns.StreamingLogLineRegex.FindSubmatchIndex(line)
 		// could be blank line or metadata
@@ -46,8 +48,8 @@ func StreamLogs(logC chan *types.LogData) error {
 		}
 		data := line[prefix[1]:]
 
-		logData := &types.LogData{}
-		err = json.Unmarshal(data, logData)
+		logData := types.LogData{}
+		err = json.Unmarshal(data, &logData)
 		if err != nil {
 			log.Printf("unable to decode data: %s\n", data)
 			continue
@@ -55,33 +57,36 @@ func StreamLogs(logC chan *types.LogData) error {
 
 		logC <- logData
 	}
-	return nil
 }
 
 func init() {
 	var err error
 
-	Config, err = config.Load()
+	Config, err = config.Parse(configRaw)
 	if err != nil {
 		panic(err)
 	}
 
-	nextdns.APIKey = Config.Account.Key
-	nextdns.Profile = Config.Account.Profile
+	if err = Config.Validate(); err != nil {
+		panic(err)
+	}
+
+	nextdns.APIKey = Config.NextDNS.Key
+	nextdns.Profile = Config.NextDNS.Profile
 }
 
 type Route struct {
 	re       *regexp.Regexp
-	handlerC chan *types.LogData
+	handlerC chan types.LogData
 }
 
 type Router struct {
 	Routes []Route
 }
 
-func (r *Router) Add(key string, bucket *config.BlockBucket) chan *types.LogData {
+func (r *Router) Add(key string, bucket *config.BlockBucket) chan types.LogData {
 	// Give each chan a buffer so that they don't block the other pipeline stages
-	handlerC := make(chan *types.LogData, 2)
+	handlerC := make(chan types.LogData, 2)
 	r.Routes = append(r.Routes, Route{
 		regexp.MustCompile(fmt.Sprintf(".*%s$", key)),
 		handlerC,
@@ -89,7 +94,7 @@ func (r *Router) Add(key string, bucket *config.BlockBucket) chan *types.LogData
 	return handlerC
 }
 
-func (r *Router) Route(logC chan *types.LogData) {
+func (r *Router) Route(logC chan types.LogData) {
 	for {
 		logEntry := <-logC
 		for _, handler := range r.Routes {
@@ -102,11 +107,32 @@ func (r *Router) Route(logC chan *types.LogData) {
 
 func main() {
 	var router Router
-	logC := make(chan *types.LogData)
+	logC := make(chan types.LogData)
 
 	// Start the producer
 	go func() {
-		panic(StreamLogs(logC))
+		var retryCount int
+
+		// TODO move to constants
+		clampMax := 60 * time.Second
+		resetAfter := 10 * time.Minute
+
+		lastCrash := time.Now()
+		for {
+			err := StreamLogs(logC)
+			log.Printf("log streamer crashed: %s", err)
+			if time.Now().Sub(lastCrash) > resetAfter {
+				retryCount = 0
+				continue
+			}
+			toSleep := time.Duration(retryCount*retryCount) * time.Second
+			if toSleep > clampMax {
+				toSleep = clampMax
+			}
+			time.Sleep(toSleep)
+			lastCrash = time.Now()
+			retryCount += 1
+		}
 	}()
 
 	// Start the router
@@ -119,6 +145,6 @@ func main() {
 		go ohm.Run(key, bucket, router.Add(key, bucket))
 	}
 
-	fmt.Println("Ohm is running.")
+	log.Println("Ω")
 	select {}
 }

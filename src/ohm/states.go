@@ -9,10 +9,21 @@ import (
 	"time"
 )
 
-type Handler func(key string, allowance, cooldown, lockout time.Duration, logC chan *types.LogData) Handler
+const MaxDuration = time.Duration(1<<63 - 62135596801)
 
-func Ready(key string, allowance, cooldown, lockout time.Duration, logC chan *types.LogData) Handler {
+type Handler func(key string, allowance, cooldown, lockout time.Duration, logC chan types.LogData) Handler
+
+func durationOrMax(duration time.Duration) time.Duration {
+	if duration > 0 {
+		return duration
+	} else {
+		return MaxDuration
+	}
+}
+
+func Ready(key string, _, _, _ time.Duration, logC chan types.LogData) Handler {
 	log.Printf("ready: %s", key)
+	// TODO try harder...
 	_ = nextdns.SetBlock(key, false)
 	for {
 		select {
@@ -22,28 +33,42 @@ func Ready(key string, allowance, cooldown, lockout time.Duration, logC chan *ty
 	}
 }
 
-func Monitoring(key string, allowance, cooldown, lockout time.Duration, logC chan *types.LogData) Handler {
-	log.Printf("monitoring %s", key)
+func Monitoring(key string, allowance, cooldown, lockout time.Duration, logC chan types.LogData) Handler {
+	log.Printf("monitoring: %s (cooldown: %s, lockout: %s)", key, cooldown, lockout)
 	end := time.Now().Add(allowance)
-	cooldownTimer := time.NewTimer(cooldown)
+
+	// if a cooldown timer is provided, use that
+	cooldownTimer := time.NewTimer(durationOrMax(cooldown))
 	defer cooldownTimer.Stop()
+
+	var sessionTimer *time.Timer
+	if cooldown.Milliseconds() > 0 {
+		// we need the session timer to never fire if we're using cooldown
+		sessionTimer = time.NewTimer(MaxDuration)
+	} else {
+		sessionTimer = time.NewTimer(allowance)
+	}
+	defer sessionTimer.Stop()
+
 	for {
 		select {
 		case <-logC:
 			if time.Now().After(end) {
 				return Blocking
-			} else {
-				cooldownTimer.Reset(cooldown)
-				log.Printf("cooldown timer reset for %s (%s left, %s lockout. Resets after %s)", key, end.Sub(time.Now()), lockout, cooldown)
+			} else if cooldown.Milliseconds() > 0 {
+				cooldownTimer.Reset(durationOrMax(cooldown))
+				log.Printf("cooldown timer reset for %s (%s left in session, %s lockout. Resets after %s)", key, end.Sub(time.Now()), lockout, cooldown)
 			}
 		case <-cooldownTimer.C:
 			return Ready
+		case <-sessionTimer.C:
+			return Blocking
 		}
 	}
 }
 
-func Blocking(key string, allowance, cooldown, lockout time.Duration, logC chan *types.LogData) Handler {
-	log.Printf("blocking %s", key)
+func Blocking(key string, _, _, lockout time.Duration, logC chan types.LogData) Handler {
+	log.Printf("blocking: %s", key)
 	_ = nextdns.SetBlock(key, true)
 	lockoutTimer := time.NewTimer(lockout)
 	for {
@@ -55,9 +80,9 @@ func Blocking(key string, allowance, cooldown, lockout time.Duration, logC chan 
 	}
 }
 
-func Run(key string, bucket *config.BlockBucket, logC chan *types.LogData) {
-	fn := Ready(key, *bucket.Allowance, *bucket.Cooldown, *bucket.Lockout, logC)
+func Run(key string, bucket *config.BlockBucket, logC chan types.LogData) {
+	fn := Ready(key, bucket.Allowance, bucket.Cooldown, bucket.Lockout, logC)
 	for {
-		fn = fn(key, *bucket.Allowance, *bucket.Cooldown, *bucket.Lockout, logC)
+		fn = fn(key, bucket.Allowance, bucket.Cooldown, bucket.Lockout, logC)
 	}
 }

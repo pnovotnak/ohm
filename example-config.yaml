@@ -1,3 +1,4 @@
+# For debugging purposes only. Use `OHM_NEXTDNS_KEY` and `OHM_NEXTDNS_PROFILE` env vars instead
 account:
   key: xxxxxxxxxxx
   profile: exxxxx
