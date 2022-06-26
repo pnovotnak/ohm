@@ -1,0 +1,17 @@
+account:
+  key: xxxxxxxxxxx
+  profile: exxxxx
+
+buckets:
+  reddit.com:
+    allowance: 10m
+    lockout: 6h
+    cooldown: 30m
+  cnn.com:
+    allowance: 10m
+    lockout: 6h
+    cooldown: 30m
+  nytimes.com:
+    allowance: 15m
+    lockout: 6h
+    cooldown: 2h
