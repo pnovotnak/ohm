@@ -17,13 +17,11 @@ const (
 	EnvProfile = "PROFILE"
 )
 
-// NextDNS should be used for debugging only. It's better not to store this data on disk
 type NextDNS struct {
 	Key     string `mapstructure:"key"`
 	Profile string `mapstructure:"profile"`
 }
 
-// BlockBucket TODO this just uses NextDNS built in tracker lists I think
 type BlockBucket struct {
 	// Allowance determines the time from first occurrence in logs to block
 	Allowance time.Duration `yaml:"allowance"`
@@ -33,11 +31,6 @@ type BlockBucket struct {
 
 	// Regex is the internally rendered meaning of Name
 	Regex *regexp.Regexp
-	// FirstSessionLoad
-	FirstSessionLoad *time.Time
-	// LastSessionLoad is incremented every time NextDNS returns an answer that matches this bucket.
-	// it is not incremented when queries are blocked.
-	LastSessionLoad *time.Time
 }
 
 type Config struct {

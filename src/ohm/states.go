@@ -22,9 +22,8 @@ func durationOrMax(duration time.Duration) time.Duration {
 }
 
 func Ready(key string, _, _, _ time.Duration, logC chan types.LogData) Handler {
-	log.Printf("ready: %s", key)
-	// TODO try harder...
-	_ = nextdns.SetBlock(key, false)
+	resp, _ := nextdns.SetBlock(key, false)
+	log.Printf("ready: %s, unblocked with status %d", key, resp.StatusCode)
 	for {
 		select {
 		case <-logC:
@@ -68,9 +67,9 @@ func Monitoring(key string, allowance, cooldown, lockout time.Duration, logC cha
 }
 
 func Blocking(key string, _, _, lockout time.Duration, logC chan types.LogData) Handler {
-	log.Printf("blocking: %s", key)
-	_ = nextdns.SetBlock(key, true)
+	resp, _ := nextdns.SetBlock(key, true)
 	lockoutTimer := time.NewTimer(lockout)
+	log.Printf("blocking: %s, blocked with status %d", key, resp.StatusCode)
 	for {
 		select {
 		case <-lockoutTimer.C:

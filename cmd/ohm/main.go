@@ -1,17 +1,12 @@
 package main
 
 import (
-	"bufio"
 	_ "embed"
-	"encoding/json"
-	"fmt"
 	"github.com/pnovotnak/ohm/src/config"
 	"github.com/pnovotnak/ohm/src/nextdns"
 	"github.com/pnovotnak/ohm/src/ohm"
 	"github.com/pnovotnak/ohm/src/types"
 	"log"
-	"net/http"
-	"regexp"
 	"time"
 )
 
@@ -20,44 +15,6 @@ var (
 	//go:embed config.yaml
 	configRaw []byte
 )
-
-func StreamLogs(logC chan types.LogData) error {
-	req, err := nextdns.Get(nextdns.MakeUrl("profiles", nextdns.Profile, "logs", "stream"))
-	if err != nil {
-		return err
-	}
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return err
-	}
-
-	log.Printf("log streamer started")
-
-	reader := bufio.NewReader(resp.Body)
-	// TODO cancel via context
-	for {
-		line, err := reader.ReadBytes('\n')
-		if err != nil {
-			return err
-		}
-		prefix := nextdns.StreamingLogLineRegex.FindSubmatchIndex(line)
-		// could be blank line or metadata
-		if len(prefix) == 0 {
-			continue
-		}
-		data := line[prefix[1]:]
-
-		logData := types.LogData{}
-		err = json.Unmarshal(data, &logData)
-		if err != nil {
-			log.Printf("unable to decode data: %s\n", data)
-			continue
-		}
-
-		logC <- logData
-	}
-}
 
 func init() {
 	var err error
@@ -75,38 +32,8 @@ func init() {
 	nextdns.Profile = Config.NextDNS.Profile
 }
 
-type Route struct {
-	re       *regexp.Regexp
-	handlerC chan types.LogData
-}
-
-type Router struct {
-	Routes []Route
-}
-
-func (r *Router) Add(key string, bucket *config.BlockBucket) chan types.LogData {
-	// Give each chan a buffer so that they don't block the other pipeline stages
-	handlerC := make(chan types.LogData, 2)
-	r.Routes = append(r.Routes, Route{
-		regexp.MustCompile(fmt.Sprintf(".*%s$", key)),
-		handlerC,
-	})
-	return handlerC
-}
-
-func (r *Router) Route(logC chan types.LogData) {
-	for {
-		logEntry := <-logC
-		for _, handler := range r.Routes {
-			if handler.re.MatchString(logEntry.Domain) {
-				handler.handlerC <- logEntry
-			}
-		}
-	}
-}
-
 func main() {
-	var router Router
+	var router ohm.Router
 	logC := make(chan types.LogData)
 
 	// Start the producer
@@ -119,7 +46,7 @@ func main() {
 
 		lastCrash := time.Now()
 		for {
-			err := StreamLogs(logC)
+			err := nextdns.StreamLogs(logC)
 			log.Printf("log streamer crashed: %s", err)
 			if time.Now().Sub(lastCrash) > resetAfter {
 				retryCount = 0

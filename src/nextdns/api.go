@@ -1,11 +1,13 @@
 package nextdns
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/pnovotnak/ohm/src/types"
 	"io"
+	"log"
 	"net/http"
 	"regexp"
 	"strings"
@@ -48,17 +50,54 @@ func GetLogs() (*http.Response, error) {
 	return http.DefaultClient.Do(req)
 }
 
-func SetBlock(key string, value bool) error {
-	payload, err := json.Marshal(types.DenyEntry{Active: value})
-	url := MakeUrl("profiles", Profile, "denylist", key)
-	req, err := Patch(url, bytes.NewBuffer(payload))
+func StreamLogs(logC chan types.LogData) error {
+	req, err := Get(MakeUrl("profiles", Profile, "logs", "stream"))
 	if err != nil {
 		return err
 	}
+
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return err
 	}
-	fmt.Printf("block request to %s returned: %d\n", url, resp.StatusCode)
-	return err
+
+	log.Printf("log streamer started")
+
+	reader := bufio.NewReader(resp.Body)
+	// TODO cancel via context
+	for {
+		line, err := reader.ReadBytes('\n')
+		if err != nil {
+			return err
+		}
+		prefix := StreamingLogLineRegex.FindSubmatchIndex(line)
+		// could be blank line or metadata
+		if len(prefix) == 0 {
+			continue
+		}
+		data := line[prefix[1]:]
+
+		logData := types.LogData{}
+		err = json.Unmarshal(data, &logData)
+		if err != nil {
+			log.Printf("unable to decode data: %s\n", data)
+			continue
+		}
+
+		logC <- logData
+	}
+}
+
+func SetBlock(key string, value bool) (*http.Response, error) {
+	payload, err := json.Marshal(types.DenyEntry{Active: value})
+	url := MakeUrl("profiles", Profile, "denylist", key)
+	req, err := Patch(url, bytes.NewBuffer(payload))
+	if err != nil {
+		return nil, err
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return resp, err
+	}
+	return resp, err
 }

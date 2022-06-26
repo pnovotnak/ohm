@@ -1,12 +1,14 @@
-# For debugging purposes only. Use `OHM_NEXTDNS_KEY` and `OHM_NEXTDNS_PROFILE` env vars instead
-account:
-  key: xxxxxxxxxxx
-  profile: exxxxx
-
 buckets:
+  # Each domain name should exactly match a Denylist entry
   reddit.com:
+    # How much time each session will last
     allowance: 10m
+    # After a session expires, the domain is blocked for this amount of time
     lockout: 6h
+    # If provided, the domain will not be blocked if the domain is not queried for this length of time.
+    #
+    # This doesn't work very well with modern web browsers as they maintain live connections to sites
+    # for very long periods.
     cooldown: 30m
   cnn.com:
     allowance: 10m
