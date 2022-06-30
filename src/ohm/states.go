@@ -24,12 +24,8 @@ func durationOrMax(duration time.Duration) time.Duration {
 func Ready(key string, _, _, _ time.Duration, logC chan types.LogData) Handler {
 	resp, _ := nextdns.SetBlock(key, false)
 	log.Printf("ready: %s, unblocked with status %d", key, resp.StatusCode)
-	for {
-		select {
-		case <-logC:
-			return Monitoring
-		}
-	}
+	<-logC
+	return Monitoring
 }
 
 func Monitoring(key string, allowance, cooldown, lockout time.Duration, logC chan types.LogData) Handler {
@@ -56,7 +52,7 @@ func Monitoring(key string, allowance, cooldown, lockout time.Duration, logC cha
 				return Blocking
 			} else if cooldown.Milliseconds() > 0 {
 				cooldownTimer.Reset(durationOrMax(cooldown))
-				log.Printf("cooldown timer reset for %s (%s left in session, %s lockout. Resets after %s)", key, end.Sub(time.Now()), lockout, cooldown)
+				log.Printf("cooldown timer reset for %s (%s left in session, %s lockout. Resets after %s)", key, time.Until(end), lockout, cooldown)
 			}
 		case <-cooldownTimer.C:
 			return Ready
