@@ -47,10 +47,11 @@ func main() {
 		lastCrash := time.Now()
 		for {
 			err := nextdns.StreamLogs(logC)
-			log.Printf("log streamer crashed: %s", err)
 			if time.Since(lastCrash) > resetAfter {
 				retryCount = 0
 				continue
+			} else {
+				log.Printf("log streamer restart attempt #%d: (previous error: %s)", retryCount, err)
 			}
 			toSleep := time.Duration(retryCount*retryCount) * time.Second
 			if toSleep > clampMaxRetrySleep {
