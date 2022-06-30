@@ -19,3 +19,5 @@ jobs:
       run: cp example-config.yaml cmd/ohm/config.yaml
     - name: Test
       run: go test -v ./...
+    - name: golangci-lint
+      uses: golangci/golangci-lint-action@v3

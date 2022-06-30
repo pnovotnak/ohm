@@ -1,5 +1,7 @@
 # Ohm
 
+![Go Report Card](https://goreportcard.com/badge/github.com/pnovotnak/ohm)
+
 Ohm is a minimal app that helps break the cycle of endless scrolling. Ohm works by blocking domain fragments using 
 [NextDNS](https://nextdns.com/) _Denylist_ feature. It works best with websites but may also work with some apps.
 
