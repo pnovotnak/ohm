@@ -19,7 +19,7 @@ const (
 )
 
 var (
-	StreamingLogLineRegex = regexp.MustCompile("(^data:\\s+)")
+	StreamingLogLineRegex = regexp.MustCompile(`^data:\s+`)
 	APIKey                string
 	Profile               string
 )
@@ -90,6 +90,9 @@ func StreamLogs(logC chan types.LogData) error {
 
 func SetBlock(key string, value bool) (*http.Response, error) {
 	payload, err := json.Marshal(types.DenyEntry{Active: value})
+	if err != nil {
+		return nil, err
+	}
 	url := MakeUrl("profiles", Profile, "denylist", key)
 	req, err := Patch(url, bytes.NewBuffer(payload))
 	if err != nil {
