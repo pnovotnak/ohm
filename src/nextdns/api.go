@@ -80,7 +80,7 @@ func StreamLogs(logC chan types.LogData) error {
 		logData := types.LogData{}
 		err = json.Unmarshal(data, &logData)
 		if err != nil {
-			log.Printf("unable to decode data: %s\n", data)
+			log.Printf("unable to unmarshal data: '%s\n' (%s)", data, err)
 			continue
 		}
 
