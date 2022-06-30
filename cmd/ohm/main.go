@@ -48,7 +48,7 @@ func main() {
 		for {
 			err := nextdns.StreamLogs(logC)
 			log.Printf("log streamer crashed: %s", err)
-			if time.Now().Sub(lastCrash) > resetAfter {
+			if time.Since(lastCrash) > resetAfter {
 				retryCount = 0
 				continue
 			}
