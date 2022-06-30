@@ -14,7 +14,20 @@ type LogData struct {
 	Encrypted bool      `json:"encrypted"`
 	Protocol  string    `json:"protocol"`
 	Status    Status    `json:"status"`
-	Reasons   []string  `json:"reasons"`
+	Reasons   []struct {
+		Id   string `json:"id"`
+		Name string `json:"name"`
+	} `json:"reasons"`
+}
+
+type T struct {
+	Timestamp time.Time `json:"timestamp"`
+	Domain    string    `json:"domain"`
+	Root      string    `json:"root"`
+	Tracker   string    `json:"tracker"`
+	Encrypted bool      `json:"encrypted"`
+	Protocol  string    `json:"protocol"`
+	Status    string    `json:"status"`
 }
 
 type LogResponse struct {

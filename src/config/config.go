@@ -33,6 +33,12 @@ type BlockBucket struct {
 	Regex *regexp.Regexp
 }
 
+func (bb *BlockBucket) Init(fqdnFragment string) error {
+	var err error
+	bb.Regex, err = regexp.Compile(fmt.Sprintf(".*%s", fqdnFragment))
+	return err
+}
+
 type Config struct {
 	Test    string  `yaml:"test"`
 	NextDNS NextDNS `yaml:"nextdns"`
@@ -52,7 +58,7 @@ func Parse(config []byte) (*Config, error) {
 		return parsed, err
 	}
 	for fqdnFragment, bucket := range parsed.Buckets {
-		bucket.Regex, err = regexp.Compile(fmt.Sprintf(".*%s", fqdnFragment))
+		err = bucket.Init(fqdnFragment)
 	}
 	return parsed, err
 }

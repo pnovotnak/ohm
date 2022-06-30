@@ -41,7 +41,7 @@ func main() {
 		var retryCount int
 
 		// TODO move to constants
-		clampMax := 60 * time.Second
+		clampMaxRetrySleep := 60 * time.Second
 		resetAfter := 10 * time.Minute
 
 		lastCrash := time.Now()
@@ -53,8 +53,8 @@ func main() {
 				continue
 			}
 			toSleep := time.Duration(retryCount*retryCount) * time.Second
-			if toSleep > clampMax {
-				toSleep = clampMax
+			if toSleep > clampMaxRetrySleep {
+				toSleep = clampMaxRetrySleep
 			}
 			time.Sleep(toSleep)
 			lastCrash = time.Now()
