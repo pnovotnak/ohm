@@ -1,6 +1,6 @@
 buckets:
   # Each domain name should exactly match a Denylist entry
-  reddit.com:
+  example.com:
     # How much time each session will last
     allowance: 10m
     # After a session expires, the domain is blocked for this amount of time
