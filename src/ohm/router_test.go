@@ -8,19 +8,29 @@ import (
 
 import "testing"
 
-func TestRouter_Add(t *testing.T) {
+func routerFixture() (*Router, []config.BlockBucket, error) {
 	var err error
 	router := Router{}
-	bucketMatch := config.BlockBucket{}
-	if err = bucketMatch.Init("matches.com"); err != nil {
+	buckets := []config.BlockBucket{
+		{},
+		{},
+	}
+	if err = buckets[0].Init("matches.com"); err != nil {
+		return nil, buckets, err
+	}
+	if err = buckets[1].Init("no-matches.com"); err != nil {
+		return nil, buckets, err
+	}
+	router.Add("matches.com", &buckets[0])
+	router.Add("no-matches.com", &buckets[1])
+	return &router, buckets, nil
+}
+
+func TestRouter_Route(t *testing.T) {
+	router, _, err := routerFixture()
+	if err != nil {
 		t.Fatal(err)
 	}
-	bucketNoMatch := config.BlockBucket{}
-	if err = bucketNoMatch.Init("no-matches.com"); err != nil {
-		t.Fatal(err)
-	}
-	router.Add("matches.com", &bucketMatch)
-	router.Add("no-matches.com", &bucketNoMatch)
 	logC := make(chan types.LogData)
 	go router.Route(logC)
 	exampleData1 := []byte(" {\"timestamp\":\"2022-06-30T01:13:13.440Z\",\"domain\":\"some.matches.com\",\"root\":\"matches.com\",\"tracker\":\"\",\"encrypted\":true,\"protocol\":\"DNS-over-TLS\",\"status\":\"blocked\",\"reasons\":[{\"id\":\"denylist\",\"name\":\"Denylist\"}]}")
@@ -29,9 +39,4 @@ func TestRouter_Add(t *testing.T) {
 		t.Fatal(err)
 	}
 	logC <- exampleParsed
-
-}
-
-func TestRouter_Route(t *testing.T) {
-
 }

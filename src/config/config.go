@@ -51,12 +51,12 @@ func Parse(config []byte) (*Config, error) {
 
 	parsed := &Config{}
 	err = yaml.Unmarshal(config, parsed)
-
-	parsed.NextDNS.Key = getEnv(parsed.NextDNS.Key, "nextdns", EnvKey)
-	parsed.NextDNS.Profile = getEnv(parsed.NextDNS.Profile, "nextdns", EnvProfile)
 	if err != nil {
 		return parsed, err
 	}
+
+	parsed.NextDNS.Key = getEnv(parsed.NextDNS.Key, "nextdns", EnvKey)
+	parsed.NextDNS.Profile = getEnv(parsed.NextDNS.Profile, "nextdns", EnvProfile)
 	for fqdnFragment, bucket := range parsed.Buckets {
 		err = bucket.Init(fqdnFragment)
 	}
