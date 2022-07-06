@@ -58,3 +58,7 @@ The easiest way to deploy Ohm is with [Fly](https://fly.io/).
    flyctl logs
    ```
 5. Try visiting sites you've configured Ohm to monitor.
+
+# Instrumentation
+
+Ohm produces some metrics concerning its operation. You can query them by using Fly's built-in metrics stack. See: https://fly.io/docs/reference/metrics/#querying 
