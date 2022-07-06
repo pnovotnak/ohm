@@ -61,8 +61,6 @@ func StreamLogs(logC chan types.LogData) error {
 		return err
 	}
 
-	log.Printf("log streamer started")
-
 	reader := bufio.NewReader(resp.Body)
 	// TODO cancel via context
 	for {

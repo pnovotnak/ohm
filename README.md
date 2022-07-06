@@ -12,7 +12,7 @@ If `cooldown` is not provided, Ohm is activated for a domain when you first quer
 website). Once it's activated, it starts a timer for that domain. Once the timer expires, it enables the corresponding 
 Denylist entry.
 
-If `cooldown` is provided, Ohm will monitor DNS queries for the domain. If no requests are made for the time specified 
+If `cooldown` is provided, Ohm will monitor DNS query logs for the domain. If no requests are made for the time specified 
 by `cooldown`, the block will not be inserted.
 
 _Note that browsers maintain very long-lived connections and typically systems have at least 2 layers of DNS caching. 
@@ -30,9 +30,11 @@ The easiest way to deploy Ohm is with [Fly](https://fly.io/).
 
 1. A [NextDNS](https://nextdns.com/) account (free).
    1. Add a NextDNS configuration profile for yourself.
-      1. Create a `Denylist` entry for each site you wish to block.
-      2. Note your profile's ID. This can be found in the URL when configuring your profile or from the `Setup` page.
-      3. Retrieve your API token from your Account page.
+      1. Enable query logging (`Settings` -> `Logs`). Ohm uses these logs to function.
+         1. You may disable `Log clients IPs` if you like, and retention can be dropped to 1h.
+      2. Create a `Denylist` entry for each site you wish to block.
+      3. Note your profile's ID. This can be found in the URL when configuring your profile or from the `Setup` page.
+      4. Retrieve your API token from your `Account` page.
 2. A [Fly.io](https://fly.io/) account (also free).
    1. Configure any device (computer, phone etc.) That you'd like to use Ohm with to use the NextDNS profile created above.
 
