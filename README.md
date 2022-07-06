@@ -20,7 +20,8 @@ You may need to spend some time configuring Ohm for your system, or your system 
 
 # Configuration
 
-See [`example-config.yaml`](example-config.yaml) for an example of how to configure Ohm.
+See [`example-config.yaml`](example-config.yaml) for an example of how to configure Ohm. You'll need to place a 
+configuration file at `cmd/ohm/config.yaml` for it to be used. 
 
 # Deployment
 
@@ -35,13 +36,15 @@ The easiest way to deploy Ohm is with [Fly](https://fly.io/).
       2. Create a `Denylist` entry for each site you wish to block.
       3. Note your profile's ID. This can be found in the URL when configuring your profile or from the `Setup` page.
       4. Retrieve your API token from your `Account` page.
-2. A [Fly.io](https://fly.io/) account (also free).
    1. Configure any device (computer, phone etc.) That you'd like to use Ohm with to use the NextDNS profile created above.
+2. A [Fly.io](https://fly.io/) account (also free).
+   1. Create an org for yourself
+   2. Install and configure [flyctl](https://fly.io/docs/getting-started/installing-flyctl/)
 
 ## Setup & Deployment
 
 1. Clone this repository.
-2. Create a configuration file in `cmd/ohm/config.yaml`. See [Configuration](#configuration) for details.
+2. Create a configuration file. See [Configuration](#configuration) for details.
 3. Deploy Ohm to Fly
    ```shell
    cd ohm/
