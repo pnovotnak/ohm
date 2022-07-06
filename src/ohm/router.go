@@ -11,13 +11,13 @@ import (
 
 var (
 	blockedQueries = prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: "blocked_queries",
+		Name: "ohm_blocked_queries",
 		Help: "Blocked queries by domain",
 	}, []string{
 		"domain",
 	})
 	allowedQueries = prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: "allowed_queries",
+		Name: "ohm_allowed_queries",
 		Help: "Allowed queries by domain",
 	}, []string{
 		"domain",

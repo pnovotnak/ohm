@@ -20,10 +20,10 @@ var (
 	Config = &config.Config{}
 	//go:embed config.yaml
 	configRaw   []byte
-	MetricsAddr = ":9090"
+	MetricsAddr = ":9091"
 
 	logStreamerRestarts = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "log_streamer_restarts",
+		Name: "ohm_log_streamer_restarts",
 		Help: "The total number of log streamer restart events",
 	})
 )
