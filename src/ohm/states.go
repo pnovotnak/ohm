@@ -2,11 +2,12 @@
 package ohm
 
 import (
+	"log"
+	"time"
+
 	"github.com/pnovotnak/ohm/src/config"
 	"github.com/pnovotnak/ohm/src/nextdns"
 	"github.com/pnovotnak/ohm/src/types"
-	"log"
-	"time"
 )
 
 const MaxDuration = time.Duration(1<<63 - 62135596801)

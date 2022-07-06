@@ -2,18 +2,30 @@ package main
 
 import (
 	_ "embed"
+	"log"
+	"net/http"
+	"time"
+
 	"github.com/pnovotnak/ohm/src/config"
 	"github.com/pnovotnak/ohm/src/nextdns"
 	"github.com/pnovotnak/ohm/src/ohm"
 	"github.com/pnovotnak/ohm/src/types"
-	"log"
-	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 var (
 	Config = &config.Config{}
 	//go:embed config.yaml
-	configRaw []byte
+	configRaw   []byte
+	MetricsAddr = ":9091"
+
+	logStreamerRestarts = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "ohm_log_streamer_restarts",
+		Help: "The total number of log streamer restart events",
+	})
 )
 
 func init() {
@@ -36,6 +48,11 @@ func main() {
 	var router ohm.Router
 	logC := make(chan types.LogData)
 
+	go func() {
+		http.Handle("/metrics", promhttp.Handler())
+		_ = http.ListenAndServe(MetricsAddr, nil)
+	}()
+
 	// Start the producer
 	go func() {
 		var retryCount int
@@ -47,10 +64,12 @@ func main() {
 		lastCrash := time.Now()
 		for {
 			err := nextdns.StreamLogs(logC)
-			log.Printf("log streamer crashed: %s", err)
+			logStreamerRestarts.Inc()
 			if time.Since(lastCrash) > resetAfter {
 				retryCount = 0
 				continue
+			} else {
+				log.Printf("log streamer restart attempt #%d: (previous error: %s)", retryCount, err)
 			}
 			toSleep := time.Duration(retryCount*retryCount) * time.Second
 			if toSleep > clampMaxRetrySleep {
@@ -72,6 +91,6 @@ func main() {
 		go ohm.Run(key, bucket, router.Add(key, bucket))
 	}
 
-	log.Println("Ω")
+	log.Printf("Ω started, serving metrics on %s", MetricsAddr)
 	select {}
 }
