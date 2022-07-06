@@ -2,21 +2,23 @@ package ohm
 
 import (
 	"fmt"
-	"github.com/prometheus/client_golang/prometheus"
 	"regexp"
 
 	"github.com/pnovotnak/ohm/src/config"
 	"github.com/pnovotnak/ohm/src/types"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
 var (
-	blockedQueries = prometheus.NewCounterVec(prometheus.CounterOpts{
+	blockedQueries = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "ohm_blocked_queries",
 		Help: "Blocked queries by domain",
 	}, []string{
 		"domain",
 	})
-	allowedQueries = prometheus.NewCounterVec(prometheus.CounterOpts{
+	allowedQueries = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "ohm_allowed_queries",
 		Help: "Allowed queries by domain",
 	}, []string{
@@ -51,9 +53,9 @@ func (r *Router) Route(logC chan types.LogData) {
 		for _, route := range r.Routes {
 			if route.re.MatchString(logEntry.Domain) {
 				if logEntry.Status == types.StatusBlocked {
-					blockedQueries.With(prometheus.Labels{"domain": route.key})
+					blockedQueries.With(prometheus.Labels{"domain": route.key}).Inc()
 				} else {
-					allowedQueries.With(prometheus.Labels{"domain": route.key})
+					allowedQueries.With(prometheus.Labels{"domain": route.key}).Inc()
 				}
 				route.handlerC <- logEntry
 			}
