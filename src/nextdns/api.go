@@ -80,7 +80,7 @@ func StreamLogs(logC chan types.LogData, lastID string) (string, error) {
 		}
 
 		if idPrefix := StreamingLogLineIDRegex.FindSubmatchIndex(line); len(idPrefix) > 0 {
-			lastID = string(line[idPrefix[1]:])
+			lastID = strings.TrimSpace(string(line[idPrefix[1]:]))
 			continue
 		} else if prefix := StreamingLogLineRegex.FindSubmatchIndex(line); len(prefix) > 0 {
 			data = line[prefix[1]:]
