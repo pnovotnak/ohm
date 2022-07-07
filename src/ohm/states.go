@@ -30,7 +30,7 @@ func Ready(key string, _, _, _ time.Duration, logC chan types.LogData) Handler {
 }
 
 func Monitoring(key string, allowance, cooldown, lockout time.Duration, logC chan types.LogData) Handler {
-	log.Printf("monitoring: %s (cooldown: %s, lockout: %s)", key, cooldown, lockout)
+	log.Printf("monitoring: %s (allowance: %s, cooldown: %s, lockout: %s)", key, allowance, cooldown, lockout)
 	end := time.Now().Add(allowance)
 
 	// if a cooldown timer is provided, use that

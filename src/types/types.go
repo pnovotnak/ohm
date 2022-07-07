@@ -6,6 +6,8 @@ type Status string
 
 const StatusBlocked Status = "blocked"
 
+type LogEntryID string
+
 type LogData struct {
 	Timestamp time.Time `json:"timestamp"`
 	Domain    string    `json:"domain"`

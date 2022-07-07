@@ -19,9 +19,11 @@ const (
 )
 
 var (
-	StreamingLogLineRegex = regexp.MustCompile(`^data:\s+`)
-	APIKey                string
-	Profile               string
+	StreamingLogLineIDRegex = regexp.MustCompile(`^id:\s+`)
+	StreamingLogLineRegex   = regexp.MustCompile(`^data:\s+`)
+
+	APIKey  string
+	Profile string
 )
 
 func MakeUrl(pathParts ...string) string {
@@ -50,30 +52,42 @@ func GetLogs() (*http.Response, error) {
 	return http.DefaultClient.Do(req)
 }
 
-func StreamLogs(logC chan types.LogData) error {
+func StreamLogs(logC chan types.LogData, lastID string) (string, error) {
 	req, err := Get(MakeUrl("profiles", Profile, "logs", "stream"))
+	if lastID != "" {
+		log.Printf("streaming from id %s onwards", lastID)
+		q := req.URL.Query()
+		q.Add("id", lastID)
+		req.URL.RawQuery = q.Encode()
+	}
+
 	if err != nil {
-		return err
+		return lastID, err
 	}
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return err
+		return lastID, err
 	}
 
 	reader := bufio.NewReader(resp.Body)
+	var data []byte
 	// TODO cancel via context
 	for {
 		line, err := reader.ReadBytes('\n')
 		if err != nil {
-			return err
+			return lastID, err
 		}
-		prefix := StreamingLogLineRegex.FindSubmatchIndex(line)
-		// could be blank line or metadata
-		if len(prefix) == 0 {
+
+		if idPrefix := StreamingLogLineIDRegex.FindSubmatchIndex(line); len(idPrefix) > 0 {
+			lastID = string(line[idPrefix[1]:])
+			continue
+		} else if prefix := StreamingLogLineRegex.FindSubmatchIndex(line); len(prefix) > 0 {
+			data = line[prefix[1]:]
+		} else {
+			// could be blank line or be other metadata
 			continue
 		}
-		data := line[prefix[1]:]
 
 		logData := types.LogData{}
 		err = json.Unmarshal(data, &logData)
