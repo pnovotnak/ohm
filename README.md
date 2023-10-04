@@ -48,10 +48,9 @@ The easiest way to deploy Ohm is with [Fly](https://fly.io/).
 3. Deploy Ohm to Fly
    ```shell
    cd ohm/
-   flyctl deploy
+   flyctl apps create ohm
    flyctl secrets set OHM_NEXTDNS_KEY=<API token from above> OHM_NEXTDNS_PROFILE=<your profile ID from above>
-   # For good measure...
-   flyctl restart
+   flyctl deploy
    ```
 4. Monitor logs.
    ```shell

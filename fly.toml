@@ -1,9 +1,6 @@
-# fly.toml file generated for ohm on 2022-06-26T15:10:36-07:00
-
 app = "ohm"
 kill_signal = "SIGINT"
-kill_timeout = 5
-processes = []
+kill_timeout = "5s"
 
 [build]
   builder = "paketobuildpacks/builder:base"
