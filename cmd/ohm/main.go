@@ -55,7 +55,9 @@ func main() {
 
 	// Start the producer
 	go func() {
+		var err error
 		var retryCount int
+		var lineID string
 
 		// TODO move to constants
 		clampMaxRetrySleep := 60 * time.Second
@@ -63,7 +65,7 @@ func main() {
 
 		lastCrash := time.Now()
 		for {
-			err := nextdns.StreamLogs(logC)
+			lineID, err = nextdns.StreamLogs(logC, lineID)
 			logStreamerRestarts.Inc()
 			if time.Since(lastCrash) > resetAfter {
 				retryCount = 0
